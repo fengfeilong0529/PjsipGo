@@ -1,0 +1,2 @@
+include ':app',':sipservice'
+rootProject.name='PjsipGo'
