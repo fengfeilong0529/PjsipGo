@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -71,13 +70,12 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private int mType;
     private String mNumber;
     private boolean mIsVideoConference;
+    private boolean micMute;
+    private MyReceiver mReceiver;
 
     public static final int TYPE_INCOMING_CALL = 646;
     public static final int TYPE_OUT_CALL = 647;
     public static final int TYPE_CALL_CONNECTED = 648;
-    private boolean videoMute;
-    private boolean micMute;
-    private MyReceiver mReceiver;
 
 
     @Override
@@ -85,8 +83,8 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_call);
         ButterKnife.bind(this);
-        initData();
         registReceiver();
+        initData();
     }
 
     private void registReceiver() {
@@ -105,7 +103,7 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
         mIsVideoConference = getIntent().getBooleanExtra("isVideoConference", false);
 
         showLayout(mType);
-        mTextViewPeer.setText(String.format("%s\n%s", mAccountID, mDisplayName));
+        mTextViewPeer.setText(String.format("%s\n%s", mRemoteUri, mDisplayName));
         mTvOutCallInfo.setText(String.format("您正在呼叫 %s", mNumber));
 
         SurfaceHolder holder = mSvLocal.getHolder();
@@ -163,10 +161,7 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 finish();
                 break;
             case R.id.btnSpeaker:
-                //免提
-                videoMute = !videoMute;
-//                SipServiceCommand.setCallHold(this, mAccountID, mCallID, videoMute);
-//                SipServiceCommand.setVideoMute(this, mAccountID, mCallID, videoMute);
+                //切换摄像头
                 SipServiceCommand.switchVideoCaptureDevice(this,mAccountID,mCallID);
                 break;
         }
@@ -200,11 +195,9 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
-//        SipServiceCommand.startVideoPreview(this, mAccountID, mCallID, surfaceHolder.getSurface());
-//        SipServiceCommand.changeVideoOrientation(this, mAccountID, mCallID, Surface.ROTATION_90);
-
         SipServiceCommand.setupIncomingVideoFeed(CallActivity.this, mAccountID, mCallID, mSvRemote.getHolder().getSurface());
         SipServiceCommand.startVideoPreview(CallActivity.this, mAccountID, mCallID, mSvLocal.getHolder().getSurface());
+//        SipServiceCommand.changeVideoOrientation(this, mAccountID, mCallID, Surface.ROTATION_0);
     }
 
     @Override
@@ -251,7 +244,7 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 //来电
                 mTextViewCallState.setText("incoming");
             } else if (pjsip_inv_state.PJSIP_INV_STATE_EARLY.equals(callStateCode)) {
-                //对方响铃
+                //响铃
                 mTextViewCallState.setText("early");
             } else if (pjsip_inv_state.PJSIP_INV_STATE_CONNECTING.equals(callStateCode)) {
                 //连接中
@@ -260,15 +253,15 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 //连接成功
                 mTextViewCallState.setText("confirmed");
                 showLayout(TYPE_CALL_CONNECTED);
-                if (mIsVideo) {
-                    try {
-                        SipServiceCommand.setupIncomingVideoFeed(CallActivity.this, mAccountID, mCallID, mSvRemote.getHolder().getSurface());
-                        SipServiceCommand.startVideoPreview(CallActivity.this, mAccountID, mCallID, mSvLocal.getHolder().getSurface());
-                        SipServiceCommand.changeVideoOrientation(CallActivity.this, mAccountID, mCallID, Surface.ROTATION_90);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
+//                if (mIsVideo) {
+//                    try {
+//                        SipServiceCommand.setupIncomingVideoFeed(CallActivity.this, mAccountID, mCallID, mSvRemote.getHolder().getSurface());
+//                        SipServiceCommand.startVideoPreview(CallActivity.this, mAccountID, mCallID, mSvLocal.getHolder().getSurface());
+//                        SipServiceCommand.changeVideoOrientation(CallActivity.this, mAccountID, mCallID, Surface.ROTATION_90);
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//                }
             } else if (pjsip_inv_state.PJSIP_INV_STATE_DISCONNECTED.equals(callStateCode)) {
                 //断开连接
                 finish();

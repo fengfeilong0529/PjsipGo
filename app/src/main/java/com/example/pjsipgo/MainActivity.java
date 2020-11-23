@@ -48,7 +48,6 @@ public class MainActivity extends AppCompatActivity {
     private MyReceiver mReceiver;
     private SipAccountData mAccount;
     private String mAccountId;
-    private String mCallNumber;
 
     private static final int REQUEST_PERMISSIONS_STORAGE = 0x100;
 
@@ -57,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-        mCallNumber = mEtCallNumer.getText().toString().trim();
         registReceiver();
         requestPermissions();
     }
@@ -92,12 +90,13 @@ public class MainActivity extends AppCompatActivity {
     //语音呼叫
     public void audioCall(View view) {
         requestPermissions();
-        if (TextUtils.isEmpty(mCallNumber)) {
+        String callNumber = mEtCallNumer.getText().toString().trim();
+        if (TextUtils.isEmpty(callNumber)) {
             Toast.makeText(this, "请输入呼叫号码！", Toast.LENGTH_SHORT).show();
             return;
         }
         try {
-            SipServiceCommand.makeCall(this, mAccountId, "1004", false, false);
+            SipServiceCommand.makeCall(this, mAccountId, callNumber, false, false);
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(this, "Account error", Toast.LENGTH_SHORT).show();
@@ -107,12 +106,13 @@ public class MainActivity extends AppCompatActivity {
     //视频呼叫
     public void videoCall(View view) {
         requestPermissions();
-        if (TextUtils.isEmpty(mCallNumber)) {
+        String callNumber = mEtCallNumer.getText().toString().trim();
+        if (TextUtils.isEmpty(callNumber)) {
             Toast.makeText(this, "请输入呼叫号码！", Toast.LENGTH_SHORT).show();
             return;
         }
         try {
-            SipServiceCommand.makeCall(this, mAccountId, "1004", true, true);
+            SipServiceCommand.makeCall(this, mAccountId, callNumber, true, false);
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(this, "Account error", Toast.LENGTH_SHORT).show();
@@ -175,6 +175,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * 继承BroadcastEventReceiver接收事件
+     */
     public class MyReceiver extends BroadcastEventReceiver {
         private static final String TAG = "MyReceiver";
 
@@ -227,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
 
             } else if (pjsip_inv_state.PJSIP_INV_STATE_DISCONNECTED.equals(callStateCode)) {
                 //断开连接
-
+                Toast.makeText(receiverContext, callStatusCode + "", Toast.LENGTH_SHORT).show();
             } else if (pjsip_inv_state.PJSIP_INV_STATE_NULL.equals(callStateCode)) {
                 //未知错误
 
