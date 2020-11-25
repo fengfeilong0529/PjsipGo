@@ -53,7 +53,8 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
         <activity android:name=".CallActivity"
-            android:launchMode="singleTop"/>
+            android:launchMode="singleTop"
+            android:configChanges="orientation|keyboardHidden|screenSize"/>
         <activity android:name=".MainActivity"
             android:launchMode="singleTask">
             <intent-filter>

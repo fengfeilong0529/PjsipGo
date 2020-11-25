@@ -405,6 +405,7 @@ public class SipCall extends Call {
             CallSetting callSetting = prm.getOpt();
             callSetting.setFlag(pjsua_call_flag.PJSUA_CALL_INCLUDE_DISABLED_MEDIA.swigValue());
         }
+        //dst_uri格式：sip:1004
         super.makeCall(dst_uri, prm);
     }
 

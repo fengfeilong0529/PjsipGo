@@ -32,8 +32,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static net.gotev.sipservice.SipServiceCommand.AGENT_NAME;
-
 /**
  * Sip Service.
  *
@@ -634,7 +632,9 @@ public class SipService extends BackgroundService implements SipServiceConstants
             mEndpoint.libCreate();
 
             EpConfig epConfig = new EpConfig();
-            epConfig.getUaConfig().setUserAgent(AGENT_NAME);
+            //todo 设置ua 没生效？
+//            epConfig.getUaConfig().setUserAgent(AGENT_NAME);
+            epConfig.getUaConfig().setUserAgent("voip");
             epConfig.getMedConfig().setHasIoqueue(true);
             epConfig.getMedConfig().setClockRate(16000);
             epConfig.getMedConfig().setQuality(10);
@@ -647,11 +647,6 @@ public class SipService extends BackgroundService implements SipServiceConstants
             udpTransport.setQosType(pj_qos_type.PJ_QOS_TYPE_VOICE);
             TransportConfig tcpTransport = new TransportConfig();
             tcpTransport.setQosType(pj_qos_type.PJ_QOS_TYPE_VOICE);
-
-//            TransportConfig udpTransport = new TransportConfig();
-//            udpTransport.setQosType(pj_qos_type.PJ_QOS_TYPE_VIDEO);
-//            TransportConfig tcpTransport = new TransportConfig();
-//            tcpTransport.setQosType(pj_qos_type.PJ_QOS_TYPE_VIDEO);
 
             mEndpoint.transportCreate(pjsip_transport_type_e.PJSIP_TRANSPORT_UDP, udpTransport);
             mEndpoint.transportCreate(pjsip_transport_type_e.PJSIP_TRANSPORT_TCP, tcpTransport);

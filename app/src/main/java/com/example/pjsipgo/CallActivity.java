@@ -3,7 +3,6 @@ package com.example.pjsipgo;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -30,6 +29,7 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 public class CallActivity extends AppCompatActivity implements SurfaceHolder.Callback {
+    private static final String TAG = "CallActivity";
 
     @BindView(R.id.textViewPeer)
     TextView mTextViewPeer;
@@ -55,7 +55,7 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
     ImageButton mBtnMuteMic;
     @BindView(R.id.btnHangUp)
     ImageButton mBtnHangUp;
-    @BindView(R.id.btnSpeaker)
+    @BindView(R.id.btnSwitchCamera)
     ImageButton mBtnSpeaker;
     @BindView(R.id.layoutConnected)
     RelativeLayout mLayoutConnected;
@@ -71,7 +71,6 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private String mNumber;
     private boolean mIsVideoConference;
     private boolean micMute;
-    private MyReceiver mReceiver;
 
     public static final int TYPE_INCOMING_CALL = 646;
     public static final int TYPE_OUT_CALL = 647;
@@ -88,7 +87,6 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
     private void registReceiver() {
-        mReceiver = new MyReceiver();
         mReceiver.register(this);
     }
 
@@ -108,6 +106,23 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         SurfaceHolder holder = mSvLocal.getHolder();
         holder.addCallback(this);
+
+        mSvRemote.getHolder().addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(SurfaceHolder surfaceHolder) {
+
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+                SipServiceCommand.setupIncomingVideoFeed(CallActivity.this, mAccountID, mCallID, surfaceHolder.getSurface());
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+                SipServiceCommand.setupIncomingVideoFeed(CallActivity.this, mAccountID, mCallID, null);
+            }
+        });
     }
 
     public static void startActivityIn(Context context, String accountID, int callID, String displayName, String remoteUri, boolean isVideo) {
@@ -132,7 +147,7 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
         context.startActivity(intent);
     }
 
-    @OnClick({R.id.buttonAccept, R.id.buttonHangup, R.id.btnCancel, R.id.btnMuteMic, R.id.btnHangUp, R.id.btnSpeaker})
+    @OnClick({R.id.buttonAccept, R.id.buttonHangup, R.id.btnCancel, R.id.btnMuteMic, R.id.btnHangUp, R.id.btnSwitchCamera})
     public void onViewClicked(View view) {
         switch (view.getId()) {
             case R.id.buttonAccept:
@@ -160,7 +175,7 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 SipServiceCommand.hangUpCall(this, mAccountID, mCallID);
                 finish();
                 break;
-            case R.id.btnSpeaker:
+            case R.id.btnSwitchCamera:
                 //切换摄像头
                 SipServiceCommand.switchVideoCaptureDevice(this,mAccountID,mCallID);
                 break;
@@ -195,48 +210,29 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
-        SipServiceCommand.setupIncomingVideoFeed(CallActivity.this, mAccountID, mCallID, mSvRemote.getHolder().getSurface());
         SipServiceCommand.startVideoPreview(CallActivity.this, mAccountID, mCallID, mSvLocal.getHolder().getSurface());
-//        SipServiceCommand.changeVideoOrientation(this, mAccountID, mCallID, Surface.ROTATION_0);
+
     }
 
     @Override
     public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
-
     }
 
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-
     }
 
-    public class MyReceiver extends BroadcastEventReceiver {
-        private static final String TAG = "MyReceiver";
-
-        @Override
-        public void onRegistration(String accountID, pjsip_status_code registrationStateCode) {
-            super.onRegistration(accountID, registrationStateCode);
-            Log.i(TAG, "onRegistration: ");
-        }
+    public BroadcastEventReceiver mReceiver = new BroadcastEventReceiver() {
 
         @Override
         public void onIncomingCall(String accountID, int callID, String displayName, String remoteUri, boolean isVideo) {
             super.onIncomingCall(accountID, callID, displayName, remoteUri, isVideo);
-            Log.i(TAG, "onIncomingCall: ");
+            Toast.makeText(receiverContext, String.format("收到 [%s] 的来电", remoteUri), Toast.LENGTH_SHORT).show();
         }
 
         @Override
         public void onCallState(String accountID, int callID, pjsip_inv_state callStateCode, pjsip_status_code callStatusCode, long connectTimestamp, boolean isLocalHold, boolean isLocalMute, boolean isLocalVideoMute) {
             super.onCallState(accountID, callID, callStateCode, callStatusCode, connectTimestamp, isLocalHold, isLocalMute, isLocalVideoMute);
-            Log.i(TAG, "onCallState - accountID: " + accountID +
-                    ", callID: " + callID +
-                    ", callStateCode: " + callStateCode +
-                    ", callStatusCode: " + callStatusCode +
-                    ", connectTimestamp: " + connectTimestamp +
-                    ", isLocalHold: " + isLocalHold +
-                    ", isLocalMute: " + isLocalMute +
-                    ", isLocalVideoMute: " + isLocalVideoMute);
-
             if (pjsip_inv_state.PJSIP_INV_STATE_CALLING.equals(callStateCode)) {
                 //呼出
                 mTextViewCallState.setText("calling");
@@ -253,15 +249,6 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 //连接成功
                 mTextViewCallState.setText("confirmed");
                 showLayout(TYPE_CALL_CONNECTED);
-//                if (mIsVideo) {
-//                    try {
-//                        SipServiceCommand.setupIncomingVideoFeed(CallActivity.this, mAccountID, mCallID, mSvRemote.getHolder().getSurface());
-//                        SipServiceCommand.startVideoPreview(CallActivity.this, mAccountID, mCallID, mSvLocal.getHolder().getSurface());
-//                        SipServiceCommand.changeVideoOrientation(CallActivity.this, mAccountID, mCallID, Surface.ROTATION_90);
-//                    } catch (Exception e) {
-//                        e.printStackTrace();
-//                    }
-//                }
             } else if (pjsip_inv_state.PJSIP_INV_STATE_DISCONNECTED.equals(callStateCode)) {
                 //断开连接
                 finish();
@@ -275,25 +262,21 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
         @Override
         public void onOutgoingCall(String accountID, int callID, String number, boolean isVideo, boolean isVideoConference) {
             super.onOutgoingCall(accountID, callID, number, isVideo, isVideoConference);
-            Log.i(TAG, "onOutgoingCall: ");
         }
 
         @Override
         public void onStackStatus(boolean started) {
             super.onStackStatus(started);
-            Log.i(TAG, "onStackStatus: ");
         }
 
         @Override
         public void onReceivedCodecPriorities(ArrayList<CodecPriority> codecPriorities) {
             super.onReceivedCodecPriorities(codecPriorities);
-            Log.i(TAG, "onReceivedCodecPriorities: ");
         }
 
         @Override
         public void onCodecPrioritiesSetStatus(boolean success) {
             super.onCodecPrioritiesSetStatus(success);
-            Log.i(TAG, "onCodecPrioritiesSetStatus: ");
         }
 
         @Override
@@ -310,5 +293,5 @@ public class CallActivity extends AppCompatActivity implements SurfaceHolder.Cal
         protected void onCallStats(int duration, String audioCodec, pjsip_status_code callStatusCode, RtpStreamStats rx, RtpStreamStats tx) {
             super.onCallStats(duration, audioCodec, callStatusCode, rx, tx);
         }
-    }
+    };
 }

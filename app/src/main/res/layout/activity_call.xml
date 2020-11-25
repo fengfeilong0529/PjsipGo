@@ -118,7 +118,7 @@
 
             <ImageButton
                 android:src="@drawable/switch_camera"
-                android:id="@+id/btnSpeaker"
+                android:id="@+id/btnSwitchCamera"
                 android:layout_width="wrap_content"
                 android:layout_height="50dp"
                 android:scaleType="centerInside"
